@@ -32,12 +32,12 @@ MAX_LOG_FILES = 10      # keep recent 10 alert logs
 
 DEFAULTS = dict(
     window=5,
-    syn_th=15,
-    ports_th=25,
-    udp_ports_th=25,
-    icmp_hosts_th=20,
-    rst_th=40,
-    ack_th=40,
+    syn_th=150,         
+    ports_th=100,        
+    udp_ports_th=100,    
+    icmp_hosts_th=50,
+    rst_th=150,         
+    ack_th=150,       
     large_pkt_threshold=1500,
 )
 
@@ -68,10 +68,21 @@ def c(text, color):
 
 # ============ Utility ============
 def now_ts(): return time.time()
+
 def cleanup_deque(dq, window):
     cutoff = now_ts() - window
-    while dq and dq[0] < cutoff:
-        dq.popleft()
+    while dq:
+        # Check the item to see if it's a tuple or a float
+        item = dq[0]
+        
+        # Get the timestamp, whether it's the float itself or the first part of the tuple
+        ts_to_check = item[0] if isinstance(item, tuple) else item
+        
+        if ts_to_check < cutoff:
+            dq.popleft()
+        else:
+            # The first item is new, so the rest must be too. Stop checking.
+            break
 
 def write_packet_to_pcap(pkt):
     if not PCAP_ENABLED or not PCAP_TEMP_FILE: return
@@ -91,16 +102,9 @@ def save_alert(alert):
             f.write(json.dumps(alert) + "\n")
 
 def save_evidence(pkt, tag):
-    if PCAP_ENABLED and PCAP_MODE == "alerts":
-        write_packet_to_pcap(pkt)
-        return PCAP_TEMP_FILE
-    ts = int(time.time() * 1000)
-    fname = f"{PCAP_PREFIX}_{tag}_{ts}.pcap"
-    try:
-        wrpcap(fname, pkt)
-        return fname
-    except Exception:
-        return None
+    # This now *only* writes to the single session PCAP file
+    write_packet_to_pcap(pkt)
+    return PCAP_TEMP_FILE
 
 def list_interfaces():
     addrs = psutil.net_if_addrs()
@@ -245,8 +249,6 @@ def main():
     parser.add_argument("--rst-threshold", type=int, default=DEFAULTS['rst_th'])
     parser.add_argument("--ack-threshold", type=int, default=DEFAULTS['ack_th'])
     parser.add_argument("--large-pkt", type=int, default=DEFAULTS['large_pkt_threshold'])
-    parser.add_argument("--pcap", action="store_true")
-    parser.add_argument("--pcap-mode", choices=["all","alerts"], default="alerts")
     parser.add_argument("--debug", action="store_true", help="print every packet summary")
     args = parser.parse_args()
 
@@ -262,8 +264,8 @@ def main():
         'large_pkt_threshold': args.large_pkt,
     }
 
-    if args.pcap:
-        init_pcap(args.pcap_mode)
+# Always start the single PCAP log for alerts
+    init_pcap("alerts")
 
     iface = args.iface or None
     if not iface:
