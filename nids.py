@@ -1,18 +1,23 @@
 #!/usr/bin/env python3
 """
-nids.py — Simple Heuristic Network IDS (Educational Demo)
 ---------------------------------------------------------
 Detects:
-  • SYN flood / SYN scan
-  • TCP NULL, FIN, XMAS scans
-  • ACK scans, RST floods
-  • UDP scans
-  • ICMP ping sweeps
-  • Large packet anomalies
+  SYN flood / SYN scan
+  TCP NULL, FIN, XMAS scans
+  ACK scans, RST floods
+  UDP scans
+  ICMP ping sweeps
+  Large packet anomalies
 
-Usage:
+Usage for linux:
     sudo python3 nids.py --iface eth0
     sudo python3 nids.py --pcap --pcap-mode alerts --debug
+Usage for windows:
+    python nids.py --iface Ethernet0
+Outputs:
+    Console alerts with color coding
+    JSON alert log file
+    PCAP evidence files for each alert
 Logs:
     logs/ids_alerts.json
     logs/evidence_<TAG>_<timestamp>.pcap
