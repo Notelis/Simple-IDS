@@ -18,9 +18,7 @@ from scapy.all import sniff, IP, TCP, UDP, ICMP, AsyncSniffer, wrpcap
 # ============ Config ============
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
-ALERT_LOG = os.path.join(LOG_DIR, "ids_alerts.json")
 PCAP_PREFIX = os.path.join(LOG_DIR, "evidence")
-MAX_LOG_FILES = 10      # keep recent 10 alert logs
 
 DEFAULTS = dict(
     window=5,
@@ -87,8 +85,7 @@ def save_alert(alert):
         # colored console print
         sev_color = {'HIGH':'r','MEDIUM-HIGH':'y','MEDIUM':'b'}.get(alert['severity'],'w')
         print(c(f"[ALERT #{alert_counter}] {alert['type']} from {alert.get('src','?')} → {alert.get('dst','?')} ({alert['severity']})", sev_color))
-        with open(ALERT_LOG, "a") as f:
-            f.write(json.dumps(alert) + "\n")
+
 
 def save_evidence(pkt, tag):
     write_packet_to_pcap(pkt)
@@ -240,7 +237,6 @@ def main():
     parser.add_argument("--debug", action="store_true", help="print every packet summary")
     args = parser.parse_args()
 
-    rotate_logs()
     cfg = {
         'window': args.window,
         'syn_th': args.syn_threshold,
