@@ -8,19 +8,6 @@ Detects:
   UDP scans
   ICMP ping sweeps
   Large packet anomalies
-
-Usage for linux:
-    sudo python3 nids.py --iface eth0
-    sudo python3 nids.py --pcap --pcap-mode alerts --debug
-Usage for windows:
-    python nids.py --iface Ethernet0
-Outputs:
-    Console alerts with color coding
-    JSON alert log file
-    PCAP evidence files for each alert
-Logs:
-    logs/ids_alerts.json
-    logs/evidence_<TAG>_<timestamp>.pcap
 """
 
 import argparse, os, json, time, threading, shutil, signal, psutil, atexit
@@ -77,16 +64,13 @@ def now_ts(): return time.time()
 def cleanup_deque(dq, window):
     cutoff = now_ts() - window
     while dq:
-        # Check the item to see if it's a tuple or a float
         item = dq[0]
         
-        # Get the timestamp, whether it's the float itself or the first part of the tuple
         ts_to_check = item[0] if isinstance(item, tuple) else item
         
         if ts_to_check < cutoff:
             dq.popleft()
         else:
-            # The first item is new, so the rest must be too. Stop checking.
             break
 
 def write_packet_to_pcap(pkt):
@@ -107,7 +91,6 @@ def save_alert(alert):
             f.write(json.dumps(alert) + "\n")
 
 def save_evidence(pkt, tag):
-    # This now *only* writes to the single session PCAP file
     write_packet_to_pcap(pkt)
     return PCAP_TEMP_FILE
 
